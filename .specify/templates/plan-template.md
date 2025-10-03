@@ -47,7 +47,38 @@
 ## Constitution Check
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+### I. Java 25 & Spring Boot Foundation
+- [ ] All code uses Java 25 syntax and features
+- [ ] Spring Boot 3.x framework is used exclusively
+- [ ] Spring Boot Starter dependencies are used for integrations
+- [ ] No alternative JVM languages or frameworks introduced
+
+### II. Apache Kafka for Real-Time Messaging
+- [ ] All price updates flow through Kafka topics
+- [ ] Spring Kafka is used for producers/consumers
+- [ ] Kafka Streams is used for stream processing (if applicable)
+- [ ] Message schemas are defined and versioned
+- [ ] No synchronous polling mechanisms for price data
+- [ ] Dead letter queues are implemented for error handling
+
+### III. Multi-Module Maven Architecture
+- [ ] Feature components fit within multi-module structure
+- [ ] No cyclic dependencies introduced between modules
+- [ ] New modules are independently testable
+- [ ] Module naming follows `kafka-platform-{component-name}` pattern
+- [ ] Shared models are placed in core/common modules
+
+### Testing & Quality Standards
+- [ ] Contract tests defined before implementation (TDD)
+- [ ] Integration tests include Kafka producer/consumer validation
+- [ ] Unit test coverage targets 80%+ for business logic
+- [ ] Performance tests validate <100ms p95 latency for price updates
+
+### Observability Requirements
+- [ ] Structured logging (JSON format) is used
+- [ ] Actuator endpoints are exposed for monitoring
+- [ ] Kafka consumer lag monitoring is included
+- [ ] Price update latency metrics are tracked
 
 ## Project Structure
 

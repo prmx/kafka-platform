@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: price-subscriber
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: price-subscriber-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "net.prmx.kafka.platform.common.model"
+      auto-offset-reset: earliest
+  scheduling:
+    enabled: true
+
+server:
+  port: 8082
+
+kafka:
+  topics:
+    price-updates: price-updates
+    subscription-commands: subscription-commands
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    net.prmx.kafka.platform: DEBUG
+    org.springframework.kafka: INFO

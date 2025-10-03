@@ -11,8 +11,9 @@
     <groupId>net.prmx</groupId>
     <artifactId>kafka-platform</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
     <name>kafka-platform</name>
-    <description>kafka-platform</description>
+    <description>Real-Time Kafka Pricing Platform - Multi-Module Parent</description>
     <url/>
     <licenses>
         <license/>
@@ -28,7 +29,18 @@
     </scm>
     <properties>
         <java.version>25</java.version>
+        <maven.compiler.source>25</maven.compiler.source>
+        <maven.compiler.target>25</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+    
+    <modules>
+        <module>kafka-platform-common</module>
+        <module>kafka-platform-price-generator</module>
+        <module>kafka-platform-price-subscriber</module>
+        <module>kafka-platform-subscription-manager</module>
+    </modules>
+    
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
