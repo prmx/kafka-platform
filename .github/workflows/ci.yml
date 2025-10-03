@@ -2,9 +2,10 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ master, main, 'feature/**', '0*-**' ]
+    branches: [ master, main ]
   pull_request:
     branches: [ master, main ]
+    types: [opened, synchronize, reopened]
 
 jobs:
   quick-tests:
