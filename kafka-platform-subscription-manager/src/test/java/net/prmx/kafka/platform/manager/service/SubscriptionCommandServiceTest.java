@@ -13,6 +13,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -88,6 +89,13 @@ class SubscriptionCommandServiceTest {
 
     @Test
     void testPublishCommand_callsProducer() {
+        // Mock serializationService to execute the runnable immediately
+        doAnswer(invocation -> {
+            Runnable runnable = invocation.getArgument(1);
+            runnable.run();
+            return null;
+        }).when(serializationService).executeSerializedForSubscriber(any(), any());
+
         String subscriberId = "subscriber-001";
         SubscriptionCommand.Action action = SubscriptionCommand.Action.ADD;
         List<String> instrumentIds = List.of("KEY000001");

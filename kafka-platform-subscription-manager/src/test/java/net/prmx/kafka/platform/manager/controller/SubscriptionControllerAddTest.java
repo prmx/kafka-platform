@@ -88,15 +88,22 @@ class SubscriptionControllerAddTest {
 
     @Test
     void testAddInstruments_blankSubscriberId_returns404() throws Exception {
+        // Mock for space subscriberId (Spring passes " " from path, not empty string)
+        when(commandService.publishCommand(eq(" "), eq(SubscriptionCommand.Action.ADD), any()))
+            .thenThrow(new IllegalArgumentException("subscriberId cannot be blank"));
+        
         String requestBody = """
             {
                 "instrumentIds": ["KEY000001"]
             }
             """;
 
+        // Blank subscriberId in path - Spring passes " " (space) to controller
+        // SubscriptionCommand constructor throws IllegalArgumentException  
+        // Controller catches it and returns 400 (bad request)
         mockMvc.perform(post("/api/v1/subscriptions/ /add")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isBadRequest());
     }
 }

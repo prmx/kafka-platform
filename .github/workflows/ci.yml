@@ -1,117 +1,17 @@
-name: CI Pipeline
+name: CI
 
 on:
   push:
-    branches: [ master, main ]
+    branches: [ master ]
   pull_request:
-    branches: [ master, main ]
-    types: [opened, synchronize, reopened]
 
 jobs:
-  quick-tests:
-    name: Quick Tests (Unit)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Set up JDK 25
-      uses: actions/setup-java@v4
-      with:
-        java-version: '25'
-        distribution: 'zulu'
-        cache: maven
-    
-    - name: Cache Maven packages
-      uses: actions/cache@v4
-      with:
-        path: ~/.m2/repository
-        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-        restore-keys: |
-          ${{ runner.os }}-maven-
-    
-    - name: Build modules
-      run: mvn -B clean compile test-compile -DskipTests
-    
-    - name: Run unit tests (exclude integration tests)
-      run: mvn -B test -Dtest="!*IntegrationTest" -DfailIfNoTests=false
-    
-    - name: Upload unit test results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: unit-test-results
-        path: '**/target/surefire-reports/'
-        retention-days: 7
-    
-    - name: Generate unit test report
-      if: always()
-      uses: dorny/test-reporter@v1
-      with:
-        name: Unit Tests
-        path: '**/target/surefire-reports/TEST-*.xml'
-        reporter: java-junit
-        fail-on-error: true
-
-  integration-tests:
-    name: Integration Tests (Long-running)
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    needs: quick-tests
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Set up JDK 25
-      uses: actions/setup-java@v4
-      with:
-        java-version: '25'
-        distribution: 'zulu'
-        cache: maven
-    
-    - name: Cache Maven packages
-      uses: actions/cache@v4
-      with:
-        path: ~/.m2/repository
-        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-        restore-keys: |
-          ${{ runner.os }}-maven-
-    
-    - name: Build modules
-      run: mvn -B clean compile test-compile -DskipTests
-    
-    - name: Run integration tests only
-      run: mvn -B test -Dtest="*IntegrationTest"
-    
-    - name: Upload integration test results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: integration-test-results
-        path: '**/target/surefire-reports/'
-        retention-days: 7
-    
-    - name: Generate integration test report
-      if: always()
-      uses: dorny/test-reporter@v1
-      with:
-        name: Integration Tests
-        path: '**/target/surefire-reports/TEST-*.xml'
-        reporter: java-junit
-        fail-on-error: true
-
   build:
-    name: Build Artifacts
+    name: 🔨 Build
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: [quick-tests, integration-tests]
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
     
     - name: Set up JDK 25
       uses: actions/setup-java@v4
@@ -120,23 +20,54 @@ jobs:
         distribution: 'zulu'
         cache: maven
     
-    - name: Cache Maven packages
-      uses: actions/cache@v4
-      with:
-        path: ~/.m2/repository
-        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-        restore-keys: |
-          ${{ runner.os }}-maven-
-    
-    - name: Build all modules and create JARs
+    - name: Build
       run: mvn -B clean install -DskipTests
+
+  test:
+    name: 🧪 Test
+    needs: build
+    runs-on: ubuntu-latest
     
-    - name: Upload application JARs
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up JDK 25
+      uses: actions/setup-java@v4
+      with:
+        java-version: '25'
+        distribution: 'zulu'
+        cache: maven
+    
+    - name: Run tests
+      run: mvn -B test
+    
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: '**/target/surefire-reports/'
+
+  package:
+    name: 📦 Package
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up JDK 25
+      uses: actions/setup-java@v4
+      with:
+        java-version: '25'
+        distribution: 'zulu'
+        cache: maven
+    
+    - name: Package
+      run: mvn -B package -DskipTests
+    
+    - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
         name: application-jars
-        path: |
-          **/target/*.jar
-          !**/target/*-sources.jar
-          !**/target/*-javadoc.jar
-        retention-days: 30
+        path: '**/target/*.jar'
