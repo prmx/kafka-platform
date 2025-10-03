@@ -87,9 +87,17 @@ class SubscriptionManagerIntegrationTest {
         var consumer = createConsumer();
         embeddedKafka.consumeFromAnEmbeddedTopic(consumer, "subscription-commands");
 
-        ConsumerRecord<String, SubscriptionCommand> record = 
-                KafkaTestUtils.getSingleRecord(consumer, "subscription-commands", Duration.ofSeconds(10));
+        // Consume records until we find the one we're looking for
+        ConsumerRecord<String, SubscriptionCommand> record = null;
+        var records = KafkaTestUtils.getRecords(consumer, Duration.ofSeconds(10));
+        for (var r : records) {
+            if ("subscriber-add-test".equals(r.key())) {
+                record = r;
+                break;
+            }
+        }
 
+        assertThat(record).isNotNull();
         assertThat(record.key()).isEqualTo("subscriber-add-test");
         assertThat(record.value().action()).isEqualTo("ADD");
 
@@ -112,9 +120,17 @@ class SubscriptionManagerIntegrationTest {
         var consumer = createConsumer();
         embeddedKafka.consumeFromAnEmbeddedTopic(consumer, "subscription-commands");
 
-        ConsumerRecord<String, SubscriptionCommand> record = 
-                KafkaTestUtils.getSingleRecord(consumer, "subscription-commands", Duration.ofSeconds(10));
+        // Consume records until we find the one we're looking for
+        ConsumerRecord<String, SubscriptionCommand> record = null;
+        var records = KafkaTestUtils.getRecords(consumer, Duration.ofSeconds(10));
+        for (var r : records) {
+            if ("subscriber-remove-test".equals(r.key())) {
+                record = r;
+                break;
+            }
+        }
 
+        assertThat(record).isNotNull();
         assertThat(record.key()).isEqualTo("subscriber-remove-test");
         assertThat(record.value().action()).isEqualTo("REMOVE");
         assertThat(record.value().instrumentIds()).containsExactly("KEY000020");

@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DirtiesContext
 class PriceGeneratorIntegrationTest {
 
-    @Autowired
+    @org.springframework.beans.factory.annotation.Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
     @Test
@@ -38,15 +38,17 @@ class PriceGeneratorIntegrationTest {
         Consumer<String, PriceUpdate> consumer = createConsumer();
         consumer.subscribe(Collections.singletonList("price-updates"));
 
-        // Act - Wait for messages to be published
-        // The service should automatically start generating prices
-        Thread.sleep(2000); // Wait 2 seconds for some prices to be generated
+        // Act - Wait for generator to publish a cycle
+        // The new generator publishes 1M instruments per cycle (scheduleAtFixedRate with initialDelay=0)
+        // It takes 4-10 seconds to publish all 1M messages
+        Thread.sleep(15000); // Wait 15 seconds to ensure cycle starts and completes
 
-        // Poll for messages
-        ConsumerRecords<String, PriceUpdate> records = consumer.poll(Duration.ofSeconds(5));
+        // Poll for messages with longer timeout
+        ConsumerRecords<String, PriceUpdate> records = consumer.poll(Duration.ofSeconds(15));
 
-        // Assert
+        // Assert - Should receive many messages (generator publishes 1M per cycle)
         assertThat(records).isNotEmpty();
+        assertThat(records.count()).isGreaterThan(100); // Should get at least hundreds of messages
         
         // Verify at least one valid price update was received
         records.forEach(record -> {
@@ -65,12 +67,13 @@ class PriceGeneratorIntegrationTest {
         Consumer<String, PriceUpdate> consumer = createConsumer();
         consumer.subscribe(Collections.singletonList("price-updates"));
 
-        // Act
-        Thread.sleep(2000);
-        ConsumerRecords<String, PriceUpdate> records = consumer.poll(Duration.ofSeconds(5));
+        // Act - Wait for generator cycle to complete
+        Thread.sleep(15000); // 15 seconds for cycle to complete
+        ConsumerRecords<String, PriceUpdate> records = consumer.poll(Duration.ofSeconds(15));
 
-        // Assert - Messages are on the correct topic
+        // Assert - Messages are on the correct topic and we get many messages
         assertThat(records).isNotEmpty();
+        assertThat(records.count()).isGreaterThan(100); // Should get hundreds/thousands of messages
         records.forEach(record -> {
             assertThat(record.topic()).isEqualTo("price-updates");
         });
@@ -84,21 +87,22 @@ class PriceGeneratorIntegrationTest {
         Consumer<String, PriceUpdate> consumer = createConsumer();
         consumer.subscribe(Collections.singletonList("price-updates"));
 
-        // Act - Measure interval between messages
+        // Act - Measure high-throughput generation
+        Thread.sleep(15000); // Wait for cycle to complete
         long startTime = System.currentTimeMillis();
-        Thread.sleep(5000); // Wait 5 seconds
-        ConsumerRecords<String, PriceUpdate> records = consumer.poll(Duration.ofSeconds(5));
+        ConsumerRecords<String, PriceUpdate> records = consumer.poll(Duration.ofSeconds(15));
         long endTime = System.currentTimeMillis();
 
-        // Assert - Should have received multiple messages in 5 seconds
-        // (at 100ms-1s intervals, we expect 5-50 messages)
-        assertThat(records.count()).isGreaterThan(3);
+        // Assert - Should have received many messages (generator publishes 1M per cycle)
+        // New generator is cycle-based with high throughput (tens of thousands per second)
+        assertThat(records.count()).isGreaterThan(100);
         
         long duration = endTime - startTime;
         double averageInterval = duration / (double) records.count();
         
-        // Average interval should be between 100ms and 1000ms
-        assertThat(averageInterval).isBetween(100.0, 1000.0);
+        // Average interval should be very small (< 100ms) due to high-throughput batching
+        // Generator publishes ~16,000-250,000 messages/second in bursts
+        assertThat(averageInterval).isLessThan(1000.0); // Less than 1 second between messages on average
 
         consumer.close();
     }

@@ -134,10 +134,11 @@ class PriceSubscriberIntegrationTest {
         priceTemplate.send("price-updates", subscribedUpdate.instrumentId(), subscribedUpdate).get(5, TimeUnit.SECONDS);
         priceTemplate.send("price-updates", nonSubscribedUpdate.instrumentId(), nonSubscribedUpdate).get(5, TimeUnit.SECONDS);
 
-        // Then: only subscribed instrument passes filter
-        Thread.sleep(1000);
-        assertTrue(filterService.shouldProcess(subscribedUpdate));
-        assertFalse(filterService.shouldProcess(nonSubscribedUpdate));
+        // Then: only subscribed instrument passes filter (wait for subscription to be fully processed)
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
+            assertTrue(filterService.shouldProcess(subscribedUpdate), "Subscribed instrument should pass filter");
+            assertFalse(filterService.shouldProcess(nonSubscribedUpdate), "Non-subscribed instrument should be filtered out");
+        });
     }
 
     @Test
@@ -153,14 +154,16 @@ class PriceSubscriberIntegrationTest {
             Instant.now().toEpochMilli()
         );
         commandTemplate.send("subscription-commands", initialCommand.subscriberId(), initialCommand).get(5, TimeUnit.SECONDS);
-        Thread.sleep(1000);
 
         // Verify initial subscription works
         PriceUpdate update1 = new PriceUpdate("KEY000001", 100.0, Instant.now().toEpochMilli(), 99.5, 100.5, 1000);
         PriceUpdate update2 = new PriceUpdate("KEY000002", 200.0, Instant.now().toEpochMilli(), 199.5, 200.5, 2000);
         
-        assertTrue(filterService.shouldProcess(update1));
-        assertFalse(filterService.shouldProcess(update2));
+        // Wait for initial subscription to be processed
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
+            assertTrue(filterService.shouldProcess(update1), "Initial subscription should be active");
+            assertFalse(filterService.shouldProcess(update2), "KEY000002 should not be subscribed yet");
+        });
 
         // When: subscription changed dynamically
         SubscriptionCommand updateCommand = new SubscriptionCommand(
@@ -226,12 +229,13 @@ class PriceSubscriberIntegrationTest {
         KafkaTemplate<String, PriceUpdate> priceTemplate = createPriceProducer();
         for (int i = 0; i < 100; i++) {
             String instrumentId = "KEY00000" + ((i % 3) + 1); // Rotate through 3 subscribed instruments
+            double price = 100.0 + i;
             PriceUpdate update = new PriceUpdate(
                 instrumentId,
-                100.0 + i,
+                price,
                 Instant.now().toEpochMilli(),
-                99.5,
-                100.5,
+                price - 0.5,  // bid slightly below price
+                price + 0.5,  // ask slightly above price
                 1000);
             priceTemplate.send("price-updates", update.instrumentId(), update);
         }

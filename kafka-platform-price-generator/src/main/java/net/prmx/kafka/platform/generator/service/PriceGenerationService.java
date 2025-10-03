@@ -131,14 +131,15 @@ public class PriceGenerationService {
     /**
      * Format an instrument index as a KEY with leading zeros.
      */
-    private String formatInstrumentId(int index) {
+    String formatInstrumentId(int index) {
         return String.format("KEY%06d", index);
     }
 
     /**
      * Generate a price update for a specific instrument.
+     * Package-private for testing purposes.
      */
-    private PriceUpdate generatePrice(String instrumentId) {
+    PriceUpdate generatePrice(String instrumentId) {
         // Generate realistic price data
         double basePrice = 50.0 + ThreadLocalRandom.current().nextDouble(950.0); // 50-1000
         double spread = basePrice * 0.001; // 0.1% spread

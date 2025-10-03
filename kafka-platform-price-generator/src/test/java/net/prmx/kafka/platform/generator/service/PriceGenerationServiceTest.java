@@ -23,13 +23,14 @@ class PriceGenerationServiceTest {
     void testGeneratePriceReturnsValidPriceUpdate() {
         // Arrange
         PriceGenerationService service = new PriceGenerationService(new InstrumentSelector(), producer);
+        String instrumentId = "KEY000123";
 
         // Act
-        PriceUpdate priceUpdate = service.generatePrice();
+        PriceUpdate priceUpdate = service.generatePrice(instrumentId);
 
         // Assert
         assertThat(priceUpdate).isNotNull();
-        assertThat(priceUpdate.instrumentId()).matches("KEY\\d{6}");
+        assertThat(priceUpdate.instrumentId()).isEqualTo(instrumentId);
         assertThat(priceUpdate.price()).isPositive();
         assertThat(priceUpdate.timestamp()).isPositive();
         assertThat(priceUpdate.bid()).isPositive();
@@ -41,12 +42,13 @@ class PriceGenerationServiceTest {
     void testInstrumentIdInValidRange() {
         // Arrange
         PriceGenerationService service = new PriceGenerationService(new InstrumentSelector(), producer);
+        String instrumentId = "KEY000456";
 
         // Act
-        PriceUpdate priceUpdate = service.generatePrice();
+        PriceUpdate priceUpdate = service.generatePrice(instrumentId);
 
-        // Assert - Instrument should be in KEY000000-KEY999999 range
-        String instrumentId = priceUpdate.instrumentId();
+        // Assert - Instrument should match the provided ID
+        assertThat(priceUpdate.instrumentId()).isEqualTo(instrumentId);
         assertThat(instrumentId).matches("KEY\\d{6}");
         int number = Integer.parseInt(instrumentId.substring(3));
         assertThat(number).isBetween(0, 999999);
@@ -56,9 +58,10 @@ class PriceGenerationServiceTest {
     void testBidLessThanOrEqualToPrice() {
         // Arrange
         PriceGenerationService service = new PriceGenerationService(new InstrumentSelector(), producer);
+        String instrumentId = "KEY000789";
 
         // Act
-        PriceUpdate priceUpdate = service.generatePrice();
+        PriceUpdate priceUpdate = service.generatePrice(instrumentId);
 
         // Assert
         assertThat(priceUpdate.bid()).isLessThanOrEqualTo(priceUpdate.price());
@@ -68,9 +71,10 @@ class PriceGenerationServiceTest {
     void testAskGreaterThanOrEqualToPrice() {
         // Arrange
         PriceGenerationService service = new PriceGenerationService(new InstrumentSelector(), producer);
+        String instrumentId = "KEY001234";
 
         // Act
-        PriceUpdate priceUpdate = service.generatePrice();
+        PriceUpdate priceUpdate = service.generatePrice(instrumentId);
 
         // Assert
         assertThat(priceUpdate.ask()).isGreaterThanOrEqualTo(priceUpdate.price());
@@ -80,9 +84,10 @@ class PriceGenerationServiceTest {
     void testVolumeIsNonNegative() {
         // Arrange
         PriceGenerationService service = new PriceGenerationService(new InstrumentSelector(), producer);
+        String instrumentId = "KEY005678";
 
         // Act
-        PriceUpdate priceUpdate = service.generatePrice();
+        PriceUpdate priceUpdate = service.generatePrice(instrumentId);
 
         // Assert
         assertThat(priceUpdate.volume()).isGreaterThanOrEqualTo(0);
@@ -92,10 +97,11 @@ class PriceGenerationServiceTest {
     void testTimestampIsCurrentTime() {
         // Arrange
         PriceGenerationService service = new PriceGenerationService(new InstrumentSelector(), producer);
+        String instrumentId = "KEY009999";
         long beforeGeneration = System.currentTimeMillis();
 
         // Act
-        PriceUpdate priceUpdate = service.generatePrice();
+        PriceUpdate priceUpdate = service.generatePrice(instrumentId);
 
         // Assert
         long afterGeneration = System.currentTimeMillis();

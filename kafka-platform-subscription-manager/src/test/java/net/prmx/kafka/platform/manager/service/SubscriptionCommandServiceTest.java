@@ -45,7 +45,7 @@ class SubscriptionCommandServiceTest {
 
         assertThat(command).isNotNull();
         assertThat(command.subscriberId()).isEqualTo(subscriberId);
-        assertThat(command.action()).isEqualTo(action);
+        assertThat(command.action()).isEqualTo(action.name()); // action is stored as String
         assertThat(command.instrumentIds()).containsExactlyElementsOf(instrumentIds);
         assertThat(command.timestamp()).isNotNull();
     }
@@ -92,9 +92,11 @@ class SubscriptionCommandServiceTest {
         SubscriptionCommand.Action action = SubscriptionCommand.Action.ADD;
         List<String> instrumentIds = List.of("KEY000001");
 
-        service.publishCommand(subscriberId, action, instrumentIds);
+        SubscriptionCommand result = service.publishCommand(subscriberId, action, instrumentIds);
 
-        verify(producer).publishCommand(any(SubscriptionCommand.class));
+        // Verify serialization service was called (producer is called within the runnable)
+        verify(serializationService).executeSerializedForSubscriber(any(), any());
+        assertThat(result).isNotNull();
     }
 
     @Test

@@ -1,5 +1,6 @@
 package net.prmx.kafka.platform.manager.controller;
 
+import net.prmx.kafka.platform.common.model.SubscriptionCommand;
 import net.prmx.kafka.platform.manager.service.SubscriptionCommandService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,6 +9,11 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -26,6 +32,13 @@ class SubscriptionControllerRemoveTest {
 
     @Test
     void testRemoveInstruments_validRequest_returns200() throws Exception {
+        // Mock the service to return a valid command
+        SubscriptionCommand mockCommand = new SubscriptionCommand(
+            "subscriber-001", "REMOVE", List.of("KEY000001", "KEY000002"), System.currentTimeMillis()
+        );
+        when(commandService.publishCommand(eq("subscriber-001"), eq(SubscriptionCommand.Action.REMOVE), any()))
+            .thenReturn(mockCommand);
+
         String requestBody = """
             {
                 "instrumentIds": ["KEY000001", "KEY000002"]

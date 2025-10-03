@@ -27,11 +27,12 @@ class PriceUpdateProducerTest {
     @Mock
     private KafkaTemplate<String, PriceUpdate> kafkaTemplate;
 
-    @InjectMocks
     private PriceUpdateProducer producer;
 
     @Test
     void testPublishPriceCallsKafkaTemplateWithCorrectTopicAndKey() {
+        // Create producer with explicit topic name
+        producer = new PriceUpdateProducer(kafkaTemplate, "price-updates");
         // Arrange
         PriceUpdate priceUpdate = new PriceUpdate(
             "KEY000123", 105.75, System.currentTimeMillis(),
@@ -60,6 +61,9 @@ class PriceUpdateProducerTest {
 
     @Test
     void testPublishPriceHandlesErrorAndContinues() {
+        // Create producer with explicit topic name
+        producer = new PriceUpdateProducer(kafkaTemplate, "price-updates");
+        
         // Arrange
         PriceUpdate priceUpdate = new PriceUpdate(
             "KEY000123", 105.75, System.currentTimeMillis(),
